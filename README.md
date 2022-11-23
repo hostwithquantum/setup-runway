@@ -1,6 +1,18 @@
 # hostwithquantum/setup-runway
 
+![hostwithquantum/setup-runway](setup-runway-banner.jpeg)
+
 A GitHub action to setup the runway CLI! Questions, issues? Please use discussions or the issue tracker on the repository. If you like what you see here, **we appreciate a** :star: and if you'd subscribe to [(our monthly) mailing list](https://runway.planetary-quantum.com/) to stay in the loop!
+
+## Quick Start
+
+```yaml
+- uses: hostwithquantum/setup-runway@v0.1.0
+  with:
+    username: ${{ secrets.RUNWAY_USERNAME }}
+    password: ${{ secrets.RUNWAY_PASSWORD }}
+- run: runway whoami
+```
 
 ## Options
 
