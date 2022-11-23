@@ -1,0 +1,43 @@
+---
+name: 'hostwithquantum/setup-runway'
+description: 'Setup the runway CLI on GitHub Actions'
+branding:
+  icon: 'zap'
+  color: 'yellow'
+inputs:
+  username:
+    required: true
+    description: runway account
+  password:
+    required: true
+    description: runway password
+  public-key:
+    description: ssh (public) key
+    required: false
+  download-link:
+    description: 'Download link for runway CLI'
+    required: true
+    default: 'https://s3.storage.planetary-networks.de/download.staging.pqapp.dev/runway/latest/runway_linux_amd64'
+  log-level:
+    description: debug, info, warn, error
+    default: error
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: install runway cli
+      run: |
+        curl \
+          ${{ inputs.download-link }} \
+          -o ${{ github.action_path }}/runway \
+          && chmod +x ${{ github.action_path }}/runway
+      shell: bash
+    - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
+      shell: bash
+    - run: runway -v -q
+      shell: bash
+    - run: runway -l ${{ inputs.log-level }} -y -q login -u ${{ inputs.username }} -p ${{ inputs.password }}
+      shell: bash
+    - run: runway -l ${{ inputs.log-level }} -q -y key create ${{ inputs.public-key }}
+      if: "${{ inputs.public-key != '' }}"
+      shell: bash
