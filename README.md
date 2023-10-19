@@ -53,6 +53,8 @@ jobs:
       YOUR_APPLICATION_NAME: cool-app
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: create public/private key on GHA
         run: |
           mkdir -p ~/.ssh/
@@ -88,6 +90,8 @@ jobs:
       SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: create an ssh key just for this run
         run: |
           mkdir -p ~/.ssh/
