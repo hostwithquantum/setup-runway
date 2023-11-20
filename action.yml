@@ -12,15 +12,30 @@ inputs:
     required: true
     description: runway password
   public-key:
-    description: ssh (public) key
-    required: false
-  download-link:
-    description: 'Download link for runway CLI'
+    description: ssh public key location
     required: true
-    default: 'https://s3.storage.planetary-networks.de/download.staging.pqapp.dev/runway/latest/runway_linux_amd64'
+    default: "~/.ssh/id_rsa.pub"
+  private-key:
+    description: ssh private key location
+    required: true
+    default: "~/.ssh/id_rsa"
+  add-key:
+    description: if set to true, run "runway key create"
+    type: boolean
+    required: true
+    default: false
+  setup-ssh:
+    description: if set to true, setup ssh to work for "runway app deploy"
+    type: boolean
+    required: true
+    default: false
   log-level:
     description: debug, info, warn, error
     default: error
+    required: true
+  version:
+    description: runway cli version
+    default: "latest"
     required: true
 runs:
   using: "composite"
@@ -28,7 +43,8 @@ runs:
     - name: install runway cli
       run: |
         curl \
-          ${{ inputs.download-link }} \
+          -H 'Cache-Control: no-cache' \
+          "https://s3.storage.planetary-networks.de/download.runway.horse/runway/${{ inputs.version }}/runway_linux_amd64?nocache=$(date +%s)" \
           -o ${{ github.action_path }}/runway \
           && chmod +x ${{ github.action_path }}/runway
       shell: bash
@@ -36,8 +52,18 @@ runs:
       shell: bash
     - run: runway -v -q
       shell: bash
-    - run: runway -l ${{ inputs.log-level }} -y -q login -u ${{ inputs.username }} -p ${{ inputs.password }}
+    - run: runway -l ${{ inputs.log-level }} -y -q login -u "${{ inputs.username }}" -p "${{ inputs.password }}"
       shell: bash
     - run: runway -l ${{ inputs.log-level }} -q -y key create ${{ inputs.public-key }}
-      if: "${{ inputs.public-key != '' }}"
+      if: ${{ inputs.add-key == 'true' }}
+      shell: bash
+    - run:
+        echo "SSH_AUTH_SOCK=/tmp/ssh_agent.sock" >> $GITHUB_ENV
+      if: ${{ inputs.setup-ssh == 'true' }}
+      shell: bash
+    - run: |
+          ssh-keyscan -p 2222 deploy.runway.horse >> ~/.ssh/known_hosts
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add ${{ inputs.private-key }}
+      if: ${{ inputs.setup-ssh == 'true' }}
       shell: bash
