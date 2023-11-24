@@ -7,7 +7,7 @@ A GitHub action to setup the runway CLI! Questions, issues? Please use discussio
 ## Quick Start
 
 ```yaml
-- uses: hostwithquantum/setup-runway@v0.1.0
+- uses: hostwithquantum/setup-runway@v0.2.1
   with:
     username: ${{ secrets.RUNWAY_USERNAME }}
     password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -55,7 +55,7 @@ jobs:
     env:
       YOUR_APPLICATION_NAME: cool-app
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: create public/private key on GHA
@@ -64,7 +64,7 @@ jobs:
           echo ${{ secrets.PRIVATE_KEY }} > ~/.ssh/id_rsa
           echo ${{ secrets.PUBLIC_KEY }} > ~/.ssh/id_rsa.pub
           chmod 0600 ~/.ssh/id_rsa*
-      - uses: hostwithquantum/setup-runway@v0.1.0
+      - uses: hostwithquantum/setup-runway@v0.2.1
         with:
           username: ${{ secrets.RUNWAY_USERNAME }}
           password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # this is important!
       - name: create an ssh key just for this run
@@ -98,7 +98,7 @@ jobs:
           mkdir -p ~/.ssh/
           ssh-keygen -b 2048 -t rsa -f ~/.ssh/test-runner -c "test-key-${{ github.run_id }}" -q -N ""
       - name: install CLI, login and add ssh key
-        uses: hostwithquantum/setup-runway@v0.1.0
+        uses: hostwithquantum/setup-runway@v0.2.1
         with:
           username: ${{ secrets.RUNWAY_USERNAME }}
           password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -112,7 +112,7 @@ jobs:
         run: runway -y app deploy
       # this is where your tests run!
       - name: run your e2e tests here
-        run: curl https://my-cool-app-${{ github.run_id }}.staging.pqapp.dev/
+        run: curl https://my-cool-app-${{ github.run_id }}.pqapp.dev/
       # then hopefully you are done :)
       - name: cleanup app
         if: always()
