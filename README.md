@@ -12,7 +12,7 @@ steps:
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0
-- uses: hostwithquantum/setup-runway@v0.2.1
+- uses: hostwithquantum/setup-runway@v0.2.2
   with:
     username: ${{ secrets.RUNWAY_USERNAME }}
     password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -69,13 +69,13 @@ jobs:
         echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
         echo "${{ secrets.PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
         chmod 0600 ~/.ssh/id_rsa*
-    - uses: hostwithquantum/setup-runway@v0.2.1
+    - uses: hostwithquantum/setup-runway@v0.2.2
       with:
         username: ${{ secrets.RUNWAY_USERNAME }}
         password: ${{ secrets.RUNWAY_PASSWORD }}
         setup-ssh: true
-    - run: runway -y gitremote -a ${YOUR_APPLICATION_NAME}
-    - run: runway -y app deploy
+    - run: runway gitremote -a ${YOUR_APPLICATION_NAME}
+    - run: runway app deploy
 ```
 
 ### Running e2e tests
@@ -109,7 +109,7 @@ jobs:
         mkdir -p ~/.ssh/
         ssh-keygen -b 2048 -t rsa -f ~/.ssh/test-runner -c "test-key-${{ github.run_id }}" -q -N ""
     - name: install CLI, login and add ssh key
-      uses: hostwithquantum/setup-runway@v0.2.1
+      uses: hostwithquantum/setup-runway@v0.2.2
       with:
         username: ${{ secrets.RUNWAY_USERNAME }}
         password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -118,19 +118,19 @@ jobs:
         add-key: true
         setup-ssh: true
     - name: create app on runway
-      run: runway -y app create -a $APP_NAME || runway -y gitremote -a $APP_NAME
+      run: runway app create -a $APP_NAME || runway gitremote -a $APP_NAME
     - name: deploy your app to runway
-      run: runway -y app deploy
+      run: runway app deploy
     # this is where your tests run!
     - name: run your e2e tests here
       run: curl https://$APP_NAME.pqapp.dev/
     # then hopefully you are done :)
     - name: cleanup app
       if: always()
-      run : runway -y app rm -a $APP_NAME || true
+      run : runway app rm -a $APP_NAME || true
     - name: cleanup key - this is brute force
       if: always()
-      run: runway -y key rm "test-key-${{ github.run_id }}" || true
+      run: runway key rm "test-key-${{ github.run_id }}" || true
 ```
 
 ### Preview apps
@@ -151,9 +151,9 @@ jobs:
   delete:
     runs-on: ubuntu-latest
     steps:
-    - uses: hostwithquantum/setup-runway@v0.2.1
+    - uses: hostwithquantum/setup-runway@v0.2.2
       with:
         username: ${{ secrets.QUANTUM_RUNWAY_USERNAME }}
         password: ${{ secrets.QUANTUM_RUNWAY_PASSWORD }}
-    - run: runway -y app delete my-app-${{ github.event.number }} || true
+    - run: runway app delete my-app-${{ github.event.number }} || true
 ```
