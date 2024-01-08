@@ -53,6 +53,7 @@ runs:
     - run: runway -v -q
       shell: bash
     - run: echo "RUNWAY_NONINTERACTIVE=true" >> $GITHUB_ENV
+      shell: bash
     - run: runway -l ${{ inputs.log-level }} -q login -u "${{ inputs.username }}" -p "${{ inputs.password }}"
       shell: bash
     - run: runway -l ${{ inputs.log-level }} -q key create ${{ inputs.public-key }}
