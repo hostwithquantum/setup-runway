@@ -37,6 +37,9 @@ inputs:
     description: runway cli version
     default: "latest"
     required: true
+  controller-url:
+    description: Custom controller URL (for testing + enterprise)
+    required: false
 runs:
   using: "composite"
   steps:
@@ -69,3 +72,7 @@ runs:
           ssh-add ${{ inputs.private-key }}
       if: ${{ inputs.setup-ssh == 'true' }}
       shell: bash
+    - run: echo "RUNWAY_CONTROLLER=${{ inputs.controller-url }}" >> $GITHUB_ENV
+      if: ${{ inputs.controller-url != '' }}
+      shell: bash
+

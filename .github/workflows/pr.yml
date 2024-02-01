@@ -9,3 +9,16 @@ jobs:
     - run: curl https://github.com/mpalmer/action-validator/releases/download/v0.5.4/action-validator_linux_amd64 -o ./action-validator
     - run: chmod +x ./action-validator
     - run: ./action-validator ./action.yml
+
+  custom-controller-login:
+    needs:
+    - test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./
+      with:
+        username: ${{ secrets.RUNWAY_LOGIN }}
+        password: ${{ secrets.RUNWAY_PASSWORD }}
+        controller-url: ${{ secrets.RUNWAY_CONTROLLER }}
+    - run: env|grep RUNWAY_CONTROLLER
