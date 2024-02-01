@@ -12,7 +12,7 @@ steps:
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0
-- uses: hostwithquantum/setup-runway@v0.2.2
+- uses: hostwithquantum/setup-runway@v0.3.0
   with:
     username: ${{ secrets.RUNWAY_USERNAME }}
     password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -34,6 +34,7 @@ Currently supported options:
 | public-key    | `~/.ssh/id_rsa`     | ssh private key location                          |
 | log-level     | `error`             | debug, info, warn, error                          |
 | version       | `latest`            | `runway` cli version                              |
+| controller    | ``                  | controller URL for Enterprise installations       |
 
 > For the version, `latest` is fine. We strive to never break your workflows. But sometimes BC breaks are necessary. Because they usually involve our client and APIs, using `latest` helps to keep all interruptions to a minimum.
 
@@ -69,7 +70,7 @@ jobs:
         echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
         echo "${{ secrets.PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
         chmod 0600 ~/.ssh/id_rsa*
-    - uses: hostwithquantum/setup-runway@v0.2.2
+    - uses: hostwithquantum/setup-runway@v0.3.0
       with:
         username: ${{ secrets.RUNWAY_USERNAME }}
         password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -109,7 +110,7 @@ jobs:
         mkdir -p ~/.ssh/
         ssh-keygen -b 2048 -t rsa -f ~/.ssh/test-runner -c "test-key-${{ github.run_id }}" -q -N ""
     - name: install CLI, login and add ssh key
-      uses: hostwithquantum/setup-runway@v0.2.2
+      uses: hostwithquantum/setup-runway@v0.3.0
       with:
         username: ${{ secrets.RUNWAY_USERNAME }}
         password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -151,7 +152,7 @@ jobs:
   delete:
     runs-on: ubuntu-latest
     steps:
-    - uses: hostwithquantum/setup-runway@v0.2.2
+    - uses: hostwithquantum/setup-runway@v0.3.0
       with:
         username: ${{ secrets.QUANTUM_RUNWAY_USERNAME }}
         password: ${{ secrets.QUANTUM_RUNWAY_PASSWORD }}
