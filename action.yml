@@ -21,14 +21,11 @@ inputs:
     default: "~/.ssh/id_rsa"
   add-key:
     description: if set to true, run "runway key create"
-    type: boolean
     required: true
-    default: false
+    default: 'false'
   setup-ssh:
     description: if set to true, setup ssh to work for "runway app deploy"
-    type: boolean
-    required: true
-    default: false
+    default: 'false'
   log-level:
     description: debug, info, warn, error
     default: error
