@@ -6,9 +6,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - run: curl https://github.com/mpalmer/action-validator/releases/download/v0.5.4/action-validator_linux_amd64 -o ./action-validator
-    - run: chmod +x ./action-validator
-    - run: ./action-validator ./action.yml
+    - uses: asdf-vm/actions/install@v3
+      with:
+        tool_versions: |
+          action-validator 0.5.4
+    - run: asdf reshim action-validator
+    - run: action-validator ./action.yml
 
   custom-controller-login:
     needs:
