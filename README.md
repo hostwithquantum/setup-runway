@@ -2,7 +2,7 @@
 
 ![hostwithquantum/setup-runway](setup-runway-banner.jpeg)
 
-A GitHub action to setup the runway CLI! Questions, issues? Please use discussions or the issue tracker on the repository. If you like what you see here, **we appreciate a** :star: and if you'd subscribe to [(our monthly) mailing list](https://runway.planetary-quantum.com/) to stay in the loop!
+A GitHub action to setup the runway CLI! Questions, issues? Please use discussions or the issue tracker on the repository. If you like what you see here, **we appreciate a** :star: and if you'd subscribe to [(our monthly) mailing list](https://outreach.planetary-quantum.com/) and [check out the website to stay](https://www.runway.horse/) in the loop!
 
 ## Quick Start
 
@@ -12,7 +12,7 @@ steps:
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0
-- uses: hostwithquantum/setup-runway@v0.3.0
+- uses: hostwithquantum/setup-runway@v0.4.0
   with:
     username: ${{ secrets.RUNWAY_USERNAME }}
     password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -23,18 +23,18 @@ steps:
 
 Currently supported options:
 
-| option        | default value       | description                                       |
+| option        | default value       | description                                       |
 |---------------|---------------------|---------------------------------------------------|
 | username      | `<none>`            | username/email for runway                         |
 | password      | `<none>`            | password for runway                               |
 | add-key       | `false`             | if set to true, add the ssh key to runway         |
 | setup-ssh     | `false`             | if set to true, setup ssh for `runway app deploy` |
 | log-level     | `error`             | debug, info, warn, error                          |
-| public-key    | `~/.ssh/id_rsa.pub` | ssh public key location                           |
-| public-key    | `~/.ssh/id_rsa`     | ssh private key location                          |
+| public-key    | `~/.ssh/id_rsa.pub` | ssh public key location                           |
+| public-key    | `~/.ssh/id_rsa`     | ssh private key location                          |
 | log-level     | `error`             | debug, info, warn, error                          |
 | version       | `latest`            | `runway` cli version                              |
-| controller    | ``                  | controller URL for Enterprise installations       |
+| controller    | ``                  | controller URL for Enterprise installations       |
 
 > For the version, `latest` is fine. We strive to never break your workflows. But sometimes BC breaks are necessary. Because they usually involve our client and APIs, using `latest` helps to keep all interruptions to a minimum.
 
@@ -70,7 +70,7 @@ jobs:
         echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
         echo "${{ secrets.PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
         chmod 0600 ~/.ssh/id_rsa*
-    - uses: hostwithquantum/setup-runway@v0.3.0
+    - uses: hostwithquantum/setup-runway@v0.4.0
       with:
         username: ${{ secrets.RUNWAY_USERNAME }}
         password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -108,9 +108,9 @@ jobs:
     - name: create an ssh key just for this run
       run: |
         mkdir -p ~/.ssh/
-        ssh-keygen -b 2048 -t rsa -f ~/.ssh/test-runner -c "test-key-${{ github.run_id }}" -q -N ""
+        ssh-keygen -b 2048 -t rsa -f ~/.ssh/test-runner -c "test-key-${{ github.run_id }}" -q -N ""
     - name: install CLI, login and add ssh key
-      uses: hostwithquantum/setup-runway@v0.3.0
+      uses: hostwithquantum/setup-runway@v0.4.0
       with:
         username: ${{ secrets.RUNWAY_USERNAME }}
         password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -131,7 +131,7 @@ jobs:
       run : runway app rm -a $APP_NAME || true
     - name: cleanup key - this is brute force
       if: always()
-      run: runway key rm "test-key-${{ github.run_id }}" || true
+      run: runway key rm "test-key-${{ github.run_id }}" || true
 ```
 
 ### Preview apps
@@ -152,7 +152,7 @@ jobs:
   delete:
     runs-on: ubuntu-latest
     steps:
-    - uses: hostwithquantum/setup-runway@v0.3.0
+    - uses: hostwithquantum/setup-runway@v0.4.0
       with:
         username: ${{ secrets.QUANTUM_RUNWAY_USERNAME }}
         password: ${{ secrets.QUANTUM_RUNWAY_PASSWORD }}
