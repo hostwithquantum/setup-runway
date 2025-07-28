@@ -40,11 +40,19 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install Runway CLI
+    - shell: bash
+      run: |
+        ARCH=$(uname -m)
+        case $ARCH in
+          x86_64) ARCH="amd64" ;;
+          aarch64) ARCH="arm64" ;;
+        esac
+        echo "RUNWAY_ARCH=$ARCH" >> $GITHUB_ENV
+    - name: install runway cli
       run: |
         curl \
           -H 'Cache-Control: no-cache' \
-          "https://s3.storage.planetary-networks.de/download.runway.horse/runway/${{ inputs.version }}/runway_linux_amd64?nocache=$(date +%s)" \
+          "https://download.runway.horse/runway/${{ inputs.version }}/runway_linux_${RUNWAY_ARCH}?nocache=$(date +%s)" \
           -o ${{ github.action_path }}/runway \
           && chmod +x ${{ github.action_path }}/runway
       shell: bash
@@ -59,7 +67,7 @@ runs:
     - shell: bash
       run: |
         runway -v
-        echo "Installed Runway CLI ✅"
+        echo "Installed Runway CLI ✅" >> $GITHUB_STEP_SUMMARY
     - shell: bash
       run: |
         runway login -u "${{ inputs.username }}" -p "${{ inputs.password }}"
