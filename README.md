@@ -30,8 +30,8 @@ Currently supported options:
 | add-key       | `false`             | if set to true, add the ssh key to runway         |
 | setup-ssh     | `false`             | if set to true, setup ssh for `runway app deploy` |
 | log-level     | `error`             | debug, info, warn, error                          |
-| public-key    | `~/.ssh/id_rsa.pub` | ssh public key location                           |
-| public-key    | `~/.ssh/id_rsa`     | ssh private key location                          |
+| public-key-location    | `~/.ssh/id_rsa.pub` | ssh public key location                           |
+| public-key-location    | `~/.ssh/id_rsa`     | ssh private key location                          |
 | log-level     | `error`             | debug, info, warn, error                          |
 | version       | `latest`            | `runway` cli version                              |
 | controller    | ``                  | controller URL for Enterprise installations       |
