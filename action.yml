@@ -11,11 +11,11 @@ inputs:
   password:
     required: true
     description: runway password
-  public-key:
+  public-key-location:
     description: ssh public key location
     required: true
     default: "~/.ssh/id_rsa.pub"
-  private-key:
+  private-key-location:
     description: ssh private key location
     required: true
     default: "~/.ssh/id_rsa"
@@ -40,7 +40,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: install runway cli
+    - name: Install Runway CLI
       run: |
         curl \
           -H 'Cache-Control: no-cache' \
@@ -50,26 +50,35 @@ runs:
       shell: bash
     - run: echo "${{ github.action_path }}" >> $GITHUB_PATH
       shell: bash
-    - run: runway -v -q
+    - name: "Configure how Runway behaves"
+      run: |
+        echo "RUNWAY_NONINTERACTIVE=true" >> $GITHUB_ENV
+        echo "RUNWAY_LOGLEVEL=${{ inputs.log-level }}" >> $GITHUB_ENV
+        echo "RUNWAY_OUTPUT=quiet" >> $GITHUB_ENV
       shell: bash
-    - run: echo "RUNWAY_NONINTERACTIVE=true" >> $GITHUB_ENV
-      shell: bash
-    - run: runway -l ${{ inputs.log-level }} -q login -u "${{ inputs.username }}" -p "${{ inputs.password }}"
-      shell: bash
-    - run: runway -l ${{ inputs.log-level }} -q key create ${{ inputs.public-key }}
+    - shell: bash
+      run: |
+        runway -v
+        echo "Installed Runway CLI ✅"
+    - shell: bash
+      run: |
+        runway login -u "${{ inputs.username }}" -p "${{ inputs.password }}"
+        echo "Logged in successfully ✅" >> $GITHUB_STEP_SUMMARY
+    - run: |
+        runway key create ${{ inputs.public-key-location }}
+        echo "Imported a new key ✅" >> $GITHUB_STEP_SUMMARY
       if: ${{ inputs.add-key == 'true' }}
       shell: bash
-    - run:
-        echo "SSH_AUTH_SOCK=/tmp/ssh_agent.sock" >> $GITHUB_ENV
-      if: ${{ inputs.setup-ssh == 'true' }}
-      shell: bash
     - run: |
-          ssh-keyscan -p 2222 deploy.runway.horse >> ~/.ssh/known_hosts
-          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          ssh-add ${{ inputs.private-key }}
+        echo "SSH_AUTH_SOCK=/tmp/ssh_agent.sock" >> $GITHUB_ENV
+        ssh-keyscan -p 2222 deploy.runway.horse >> ~/.ssh/known_hosts
+        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+        ssh-add ${{ inputs.private-key-location }}
       if: ${{ inputs.setup-ssh == 'true' }}
       shell: bash
     - run: echo "RUNWAY_CONTROLLER=${{ inputs.controller-url }}" >> $GITHUB_ENV
       if: ${{ inputs.controller-url != '' }}
       shell: bash
-
+    - shell: bash
+      run: |
+        echo "Let's deploy something?! 🚀🤘" >> $GITHUB_STEP_SUMMARY
