@@ -1,0 +1,8 @@
+template: |
+  ## What's new
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+header: hostwithquantum/setup-runway@v$RESOLVED_VERSION
+footer: By Planetary Quantum GmbH / [runway.horse](https://www.runway.horse/)
