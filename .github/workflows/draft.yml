@@ -1,0 +1,30 @@
+name: draft
+
+on:
+  push:
+    branches: [main]
+
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - id: create_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.RUNWAY_CI_BOT_APP_ID }}
+          private-key: ${{ secrets.RUNWAY_CI_BOT_PRIVATE_KEY }}
+      - uses: release-drafter/release-drafter@v6
+        with:
+          publish: false
+        env:
+          GITHUB_TOKEN: ${{ steps.create_token.outputs.token }}
