@@ -7,10 +7,13 @@ branding:
 inputs:
   username:
     required: true
-    description: runway account
+    description: Runway account
   password:
     required: true
-    description: runway password
+    description: Runway password
+  application:
+    required: false
+    description: Runway application
   public-key:
     description: ssh public key (secret)
     required: false
@@ -91,11 +94,22 @@ runs:
       run: |
         runway login -u "${{ inputs.username }}" -p "${{ inputs.password }}"
         echo "Logged in successfully ✅" >> $GITHUB_STEP_SUMMARY
-    - run: |
+    - if: ${{ inputs.add-key == 'true' }}
+      shell: bash
+      run: |
         runway key create ${{ inputs.public-key-location }}
         echo "Imported a new key ✅" >> $GITHUB_STEP_SUMMARY
-      if: ${{ inputs.add-key == 'true' }}
+    - if: ${{ inputs.application != '' }}
       shell: bash
+      run: |
+        if runway app show -a "${{ inputs.application }}" >/dev/null 2>&1; then
+          runway gitremote -a "${{ inputs.application }}"
+          echo "Attached to application: ${{ inputs.application }} ✅" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Application does not exist..."
+          runway app create -a "${{ inputs.application }}"
+          echo "Created new application: ${{ inputs.application }} ✅" >> $GITHUB_STEP_SUMMARY
+        fi
     - env:
         SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       run: |

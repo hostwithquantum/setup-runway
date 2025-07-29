@@ -31,6 +31,7 @@ The currently supported inputs:
 |---------------------|---------------------|---------------------------------------------------|
 | username            | _empty_             | username/email for Runway                         |
 | password            | _empty_             | password for Runway                               |
+| application         | _empty_             | Runway application (will be created or added)     |
 | add-key             | `false`             | if set to true, add the ssh key to Runway         |
 | setup-ssh           | `false`             | if set to true, setup ssh for `runway app deploy` |
 | log-level           | `error`             | debug, info, warn, error                          |
@@ -45,7 +46,7 @@ The currently supported inputs:
 > For the Runway CLI version, `latest` is fine. We strive to never break your workflows. But sometimes BC breaks are necessary. Because they usually involve our client and APIs, using `latest` helps to keep all interruptions to a minimum.
 
 > [!IMPORTANT]
-> There's a BC break in this action in `v0.5.0`, previously the `public-key` and `private-key` inputs contained paths. They have been renamed to `public-key-location` and `private-key-location` to make their purpose known. The _new_ `public-key` and `private-key` inputs are optional and contain your (SSH) public and private key if used.
+> **There's a BC break in this action** in `v0.5.0`, previously the `public-key` and `private-key` inputs contained paths. They have been renamed to `public-key-location` and `private-key-location` to make their purpose more clear. The _new_ `public-key` and `private-key` inputs are optional and contain your (SSH) public and private key if used.
 
 ## Examples
 
@@ -59,12 +60,11 @@ Once the CLI is setup, you can run all commands and play around with output and 
 
 ```yaml
 # .github/workflows/release.yml
----
 name: release
 
 on:
   push:
-    tags:
+    tags: ['v*']
 
 jobs:
   deploy:
@@ -79,11 +79,38 @@ jobs:
       with:
         username: ${{ secrets.RUNWAY_USERNAME }}
         password: ${{ secrets.RUNWAY_PASSWORD }}
+        application: ${{ env.APPLICATION_NAME }}
         private-key: ${{ secrets.PRIVATE_KEY }}
         public-key: ${{ secrets.PUBLIC_KEY }}
-    - run: runway gitremote -a ${YOUR_APPLICATION_NAME}
     - run: runway app deploy
     - run: runway logout
+```
+
+### Creating applications
+
+When you invoke this action with an `application` input, we'll either create or attach an existing application with that name. By default we create an application on the free tier, but if you need to customize the `runway app create`, then skip the `application` input and do this instead in a regular `run` step.
+
+This examples creates an application on the [Pro Plan](https://www.runway.horse/pricing/) with persistence enabled:
+
+```yaml
+# .github/workflows/ci.yml
+on: pull_request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hostwithquantum/setup-runway@v0.5.0
+        with:
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          public-key: ${{ secrets.DEPLOY_PUBLIC_KEY }}
+          private-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+      - run: |
+          runway app create \
+            -a my-fancy-name \
+            -p pro-m-launch \
+            --persistence
 ```
 
 ### Running e2e tests
@@ -94,13 +121,14 @@ The following workflow leverages some of the context in form of `${{ github.run_
 
 Once deployed, you can run end-to-end tests against it and in the end, shut it down by deleting the application (and key). :) If you decide to keep the application to have a preview available, you may also do that.
 
+> [!TIP]
+> If you plan to use this feature with e.g. dependabot, then ensure to add the appropriate secrets for dependabot on your repository settings.
+
 ```yaml
 # .github/workflows/e2e.yml
----
 name: e2e
 
-on: 
-  pull_request:
+on: pull_request
 
 jobs:
   deploy_app:
@@ -110,8 +138,6 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0 # this is important!
-    - name: create the application name
-      run: echo "APP_NAME=my-app-${{ github.run_id }}" >> $GITHUB_ENV
     - name: create an ssh key just for this run
       run: |
         mkdir -p ~/.ssh/
@@ -121,21 +147,20 @@ jobs:
       with:
         username: ${{ secrets.RUNWAY_USERNAME }}
         password: ${{ secrets.RUNWAY_PASSWORD }}
+        application: my-app-${{ github.run_id }}
         public-key-location: ~/.ssh/test-runner.pub
         private-key-location: ~/.ssh/test-runner
         add-key: true
         setup-ssh: true
-    - name: create application on Runway
-      run: runway app create -a $APP_NAME || runway gitremote -a $APP_NAME
     - name: deploy your application to Runway
       run: runway app deploy
     # this is where your tests run!
     - name: run your e2e tests here
-      run: curl https://$APP_NAME.pqapp.dev/
+      run: curl https://my-app-${{ github.run_id }}.pqapp.dev/
     # then hopefully you are done :)
     - name: cleanup application
       if: always()
-      run : runway app rm -a $APP_NAME || true
+      run : runway app rm -a my-app-${{ github.run_id }} || true
     - name: cleanup key - this is brute force
       if: always()
       run: runway key rm "test-key-${{ github.run_id }}" || true
@@ -146,17 +171,20 @@ jobs:
 
 ### Preview apps
 
-In the previous example, we mentioned that keeping an application for people (humans!) to look at it, may be beneficial.
+In the previous example, we created an application to run our tests. But another great use-case are preview-apps — they allow you to create a demo of your changes.
 
-The following workflow expands on those concepts and deletes an application from Runway when a pull-request is closed (merged or closed without merge). This example _assumes_ that you constructed the application name like, `my-app-${{ github.event.number }}` (instead of `github.run_id`).
+The following workflow shows how to deletes an application from Runway when a pull-request is closed (merged or closed without merge).
+
+> [!IMPORTANT]
+> This example _assumes_ that you constructed the application with a stable identifier, e.g. `my-app-${{ github.event.number }}` (instead of `github.run_id`). In a pull request context, the `${{ github.event.number }}` is the ID of the pull request.
 
 ```yaml
+# .github/workflows/delete-preview.yml
 name: delete app
 
 on:
   pull_request:
-    types:
-    - closed
+    types: [closed]
 
 jobs:
   delete:
@@ -166,6 +194,7 @@ jobs:
       with:
         username: ${{ secrets.QUANTUM_RUNWAY_USERNAME }}
         password: ${{ secrets.QUANTUM_RUNWAY_PASSWORD }}
-    - run: runway app delete my-app-${{ github.event.number }} || true
-    - run: runway logout
+    - run: runway app rm my-app-${{ github.event.number }}
+    - if: always()
+      run: runway logout
 ```
