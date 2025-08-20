@@ -9,9 +9,10 @@ jobs:
     - uses: asdf-vm/actions/install@v4
       with:
         tool_versions: |
-          action-validator 0.5.4
+          action-validator 0.7.1
     - run: asdf reshim action-validator
     - run: action-validator ./action.yml
+    - run: action-validator ./.github/workflows/*
 
   custom-controller-login:
     if: ${{ github.actor != 'dependabot[bot]' }}
