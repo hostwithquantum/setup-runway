@@ -49,6 +49,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - run: |
+        echo "RUNWAY_CONTROLLER=${{ inputs.controller-url }}" >> $GITHUB_ENV
+        echo "Set a custom controller ✅" >> $GITHUB_STEP_SUMMARY
+      if: ${{ inputs.controller-url != '' }}
+      shell: bash
     - name: setup your ssh public and private key
       shell: bash
       if: ${{ inputs.private-key != '' && inputs.public-key != '' }}
@@ -119,11 +124,6 @@ runs:
         ssh-add ${{ inputs.private-key-location }}
         echo "ssh setup complete ✅" >> $GITHUB_STEP_SUMMARY
       if: ${{ inputs.setup-ssh == 'true' || (inputs.private-key != '' && inputs.public-key != '') }}
-      shell: bash
-    - run: |
-        echo "RUNWAY_CONTROLLER=${{ inputs.controller-url }}" >> $GITHUB_ENV
-        echo "Set a custom controller ✅" >> $GITHUB_STEP_SUMMARY
-      if: ${{ inputs.controller-url != '' }}
       shell: bash
     - shell: bash
       run: |
