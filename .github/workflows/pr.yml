@@ -14,6 +14,14 @@ jobs:
     - run: action-validator ./action.yml
     - run: action-validator ./.github/workflows/*
 
+  validate-gitlab-template:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - uses: mikefarah/yq@v4.47.1
+      with:
+        cmd: yq e --exit-status ./gitlab/runway-complete.yml
+
   custom-controller-login:
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs:
