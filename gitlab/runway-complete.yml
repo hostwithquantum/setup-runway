@@ -1,0 +1,139 @@
+# Runway Setup Template for GitLab CI
+# Provides complete runway CLI setup functionality
+# Usage: include this file and extend .runway-setup in your jobs
+
+.runway-setup:
+  variables:
+    # Required variables (must be set by user)
+    RUNWAY_USERNAME: ""
+    RUNWAY_PASSWORD: ""
+    
+    # Optional variables with defaults
+    RUNWAY_APPLICATION: ""
+    RUNWAY_VERSION: "latest"
+    RUNWAY_LOG_LEVEL: "error"
+    RUNWAY_CONTROLLER_URL: ""
+    RUNWAY_ADD_KEY: "false"
+    RUNWAY_SETUP_SSH: "false"
+    RUNWAY_PRIVATE_KEY: ""
+    RUNWAY_PUBLIC_KEY: ""
+    RUNWAY_PUBLIC_KEY_LOCATION: "~/.ssh/id_rsa.pub"
+    RUNWAY_PRIVATE_KEY_LOCATION: "~/.ssh/id_rsa"
+  
+  before_script:
+    # Set custom controller if provided
+    - |
+      if [ -n "$RUNWAY_CONTROLLER_URL" ]; then
+        export RUNWAY_CONTROLLER="$RUNWAY_CONTROLLER_URL"
+        echo "✅ Set custom controller: $RUNWAY_CONTROLLER_URL"
+      fi
+    
+    # Setup SSH keys if provided
+    - |
+      if [ -n "$RUNWAY_PRIVATE_KEY" ] && [ -n "$RUNWAY_PUBLIC_KEY" ]; then
+        mkdir -p ~/.ssh/
+        echo "$RUNWAY_PRIVATE_KEY" > "$RUNWAY_PRIVATE_KEY_LOCATION"
+        echo "$RUNWAY_PUBLIC_KEY" > "$RUNWAY_PUBLIC_KEY_LOCATION"
+        chmod 0600 "$RUNWAY_PRIVATE_KEY_LOCATION"
+        chmod 0600 "$RUNWAY_PUBLIC_KEY_LOCATION"
+        echo "✅ SSH keys added"
+        echo "  - public key in $RUNWAY_PUBLIC_KEY_LOCATION"
+        echo "  - private key in $RUNWAY_PRIVATE_KEY_LOCATION"
+      fi
+    
+    # Detect architecture and set RUNWAY_ARCH
+    - |
+      ARCH=$(uname -m)
+      case $ARCH in
+        x86_64) export RUNWAY_ARCH="amd64" ;;
+        aarch64) export RUNWAY_ARCH="arm64" ;;
+        arm64) export RUNWAY_ARCH="arm64" ;;  # macOS ARM
+        *) export RUNWAY_ARCH="$ARCH" ;;
+      esac
+      echo "Detected architecture: $RUNWAY_ARCH"
+    
+    # Install runway CLI
+    - |
+      echo "Installing runway CLI version $RUNWAY_VERSION..."
+      curl \
+        -H 'Cache-Control: no-cache' \
+        "https://download.runway.horse/runway/$RUNWAY_VERSION/runway_linux_${RUNWAY_ARCH}?nocache=$(date +%s)" \
+        -o ./runway \
+        && chmod +x ./runway
+      sudo mv ./runway /usr/local/bin/runway || mv ./runway ~/bin/runway || echo "Warning: runway binary placed in current directory"
+    
+    # Configure runway environment
+    - |
+      export RUNWAY_NONINTERACTIVE=true
+      export RUNWAY_LOGLEVEL="$RUNWAY_LOG_LEVEL"
+      export RUNWAY_OUTPUT=quiet
+    
+    # Verify installation
+    - |
+      runway -v
+      echo "✅ Installed Runway CLI"
+    
+    # Login to runway
+    - |
+      if [ -z "$RUNWAY_USERNAME" ] || [ -z "$RUNWAY_PASSWORD" ]; then
+        echo "❌ Error: RUNWAY_USERNAME and RUNWAY_PASSWORD must be set"
+        exit 1
+      fi
+      runway login -u "$RUNWAY_USERNAME" -p "$RUNWAY_PASSWORD"
+      echo "✅ Logged in successfully"
+    
+    # Import SSH key if requested
+    - |
+      if [ "$RUNWAY_ADD_KEY" = "true" ]; then
+        runway key create "$RUNWAY_PUBLIC_KEY_LOCATION"
+        echo "✅ Imported SSH key"
+      fi
+    
+    # Setup or create application if specified
+    - |
+      if [ -n "$RUNWAY_APPLICATION" ]; then
+        if runway app show -a "$RUNWAY_APPLICATION" >/dev/null 2>&1; then
+          runway gitremote -a "$RUNWAY_APPLICATION"
+          echo "✅ Attached to application: $RUNWAY_APPLICATION"
+        else
+          echo "Application does not exist, creating..."
+          runway app create -a "$RUNWAY_APPLICATION"
+          echo "✅ Created new application: $RUNWAY_APPLICATION"
+        fi
+      fi
+    
+    # Setup SSH agent if requested or if keys provided
+    - |
+      if [ "$RUNWAY_SETUP_SSH" = "true" ] || ([ -n "$RUNWAY_PRIVATE_KEY" ] && [ -n "$RUNWAY_PUBLIC_KEY" ]); then
+        export SSH_AUTH_SOCK=/tmp/ssh_agent.sock
+        ssh-keyscan -p 2222 deploy.runway.horse >> ~/.ssh/known_hosts 2>/dev/null || true
+        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+        ssh-add "$RUNWAY_PRIVATE_KEY_LOCATION"
+        echo "✅ SSH setup complete"
+      fi
+    
+    - echo "🚀 Runway setup complete! Ready to deploy! 🤘"
+
+# Example jobs showing different usage patterns
+
+.runway-deploy-example:
+  extends: .runway-setup
+  script:
+    - runway app deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+.runway-with-ssh-example:  
+  extends: .runway-setup
+  variables:
+    RUNWAY_SETUP_SSH: "true"
+    RUNWAY_ADD_KEY: "true"
+  script:
+    - runway app deploy
+
+.runway-with-app-example:
+  extends: .runway-setup
+  variables:
+    RUNWAY_APPLICATION: "my-app"
+  script:
+    - runway app deploy -a $RUNWAY_APPLICATION
