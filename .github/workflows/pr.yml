@@ -27,3 +27,16 @@ jobs:
         password: ${{ secrets.RUNWAY_PASSWORD }}
         controller-url: ${{ secrets.RUNWAY_CONTROLLER }}
     - run: env|grep RUNWAY_CONTROLLER
+
+  api-key-login:
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs:
+    - test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+      with:
+        api-key: ${{ secrets.RUNWAY_API_KEY }}
+        controller-url: ${{ secrets.RUNWAY_CONTROLLER }}
+    - run: runway whoami

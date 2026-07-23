@@ -18,6 +18,15 @@ steps:
     fetch-depth: 0
 - uses: hostwithquantum/setup-runway@v0.5.0
   with:
+    api-key: ${{ secrets.RUNWAY_API_KEY }}
+- run: runway whoami
+```
+
+Alternatively, log in with username/password:
+
+```yaml
+- uses: hostwithquantum/setup-runway@v0.5.0
+  with:
     username: ${{ secrets.RUNWAY_USERNAME }}
     password: ${{ secrets.RUNWAY_PASSWORD }}
 - run: runway whoami
@@ -31,6 +40,7 @@ The currently supported inputs:
 |---------------------|---------------------|---------------------------------------------------|
 | username            | _empty_             | username/email for Runway                         |
 | password            | _empty_             | password for Runway                               |
+| api-key             | _empty_             | Runway API key, takes precedence over username/password |
 | application         | _empty_             | Runway application (will be created or added)     |
 | add-key             | `false`             | if set to true, add the ssh key to Runway         |
 | setup-ssh           | `false`             | if set to true, setup ssh for `runway app deploy` |

@@ -6,11 +6,14 @@ branding:
   color: 'yellow'
 inputs:
   username:
-    required: true
+    required: false
     description: Runway account
   password:
-    required: true
+    required: false
     description: Runway password
+  api-key:
+    required: false
+    description: Runway API key (secret), takes precedence over username/password
   application:
     required: false
     description: Runway application
@@ -49,6 +52,11 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - if: ${{ inputs.api-key == '' && (inputs.username == '' || inputs.password == '') }}
+      shell: bash
+      run: |
+        echo "::error::Either 'api-key' or both 'username' and 'password' must be set"
+        exit 1
     - run: |
         echo "RUNWAY_CONTROLLER=${{ inputs.controller-url }}" >> $GITHUB_ENV
         echo "Set a custom controller ✅" >> $GITHUB_STEP_SUMMARY
@@ -95,7 +103,13 @@ runs:
       run: |
         runway -v
         echo "Installed Runway CLI ✅" >> $GITHUB_STEP_SUMMARY
-    - shell: bash
+    - if: ${{ inputs.api-key != '' }}
+      shell: bash
+      run: |
+        runway login --api-key "${{ inputs.api-key }}"
+        echo "Logged in successfully ✅" >> $GITHUB_STEP_SUMMARY
+    - if: ${{ inputs.api-key == '' }}
+      shell: bash
       run: |
         runway login -u "${{ inputs.username }}" -p "${{ inputs.password }}"
         echo "Logged in successfully ✅" >> $GITHUB_STEP_SUMMARY
