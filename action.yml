@@ -57,6 +57,10 @@ runs:
       run: |
         echo "::error::Either 'api-key' or both 'username' and 'password' must be set"
         exit 1
+    - if: ${{ inputs.api-key != '' && (inputs.username != '' || inputs.password != '') }}
+      shell: bash
+      run: |
+        echo "::warning::Both 'api-key' and 'username'/'password' are set; 'api-key' takes precedence"
     - run: |
         echo "RUNWAY_CONTROLLER=${{ inputs.controller-url }}" >> $GITHUB_ENV
         echo "Set a custom controller ✅" >> $GITHUB_STEP_SUMMARY
