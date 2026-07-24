@@ -10,22 +10,31 @@ This action supports amd64 and arm64 Linux runners.
 
 ## Quick Start
 
+> [!TIP]
+> API keys are new in Runway CLI `v1.45.0` (July, 2026).
+
 ```yaml
-# ...
-steps:
-- uses: actions/checkout@v4
-  with:
-    fetch-depth: 0
-- uses: hostwithquantum/setup-runway@v0.5.0
-  with:
-    api-key: ${{ secrets.RUNWAY_API_KEY }}
-- run: runway whoami
+permissions:
+  contents: read
+
+jobs:
+  runway:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+    - uses: hostwithquantum/setup-runway@v0.6.0
+      with:
+        api-key: ${{ secrets.RUNWAY_API_KEY }}
+    - run: runway whoami
 ```
 
 Alternatively, log in with username/password:
 
 ```yaml
-- uses: hostwithquantum/setup-runway@v0.5.0
+- uses: hostwithquantum/setup-runway@v0.6.0
   with:
     username: ${{ secrets.RUNWAY_USERNAME }}
     password: ${{ secrets.RUNWAY_PASSWORD }}
@@ -76,20 +85,23 @@ on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      YOUR_APPLICATION_NAME: cool-app
+      APP_NAME: cool-app
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.1
       with:
+        persist-credentials: false
         fetch-depth: 0 # this is important
-    - uses: hostwithquantum/setup-runway@v0.5.0
+    - uses: hostwithquantum/setup-runway@v0.6.0
       with:
-        username: ${{ secrets.RUNWAY_USERNAME }}
-        password: ${{ secrets.RUNWAY_PASSWORD }}
-        application: ${{ env.APPLICATION_NAME }}
+        api-key: ${{ secrets.RUNWAY_API_KEY }}
+        application: ${{ env.APP_NAME }}
         private-key: ${{ secrets.PRIVATE_KEY }}
         public-key: ${{ secrets.PUBLIC_KEY }}
     - run: runway app deploy
@@ -106,14 +118,16 @@ This examples creates an application on the [Pro Plan](https://www.runway.horse/
 # .github/workflows/ci.yml
 on: pull_request
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: hostwithquantum/setup-runway@v0.5.0
+      - uses: hostwithquantum/setup-runway@v0.6.0
         with:
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
+          api-key: ${{ secrets.RUNWAY_API_KEY }}
           public-key: ${{ secrets.DEPLOY_PUBLIC_KEY }}
           private-key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
       - run: |
@@ -121,13 +135,15 @@ jobs:
             -a my-fancy-name \
             -p pro-m-launch \
             --persistence
+      - if: always()
+        run: runway logout
 ```
 
 ### Running e2e tests
 
 GitHub Actions provides a robust and comprehensive environment to run e2e tests and here's how Runway can help:
 
-The following workflow leverages some of the context in form of `${{ github.run_id }}`. We'll use this _identifier_ to deploy an application with a unique name. Another viable option is to use the pull-requests's number: `${{ github.event.number }}`.
+The following workflow leverages some of the context in form of the pull-request's number: `${{ github.event.number }}`. We'll use this _identifier_ to deploy an application with a unique name.
 
 Once deployed, you can run end-to-end tests against it and in the end, shut it down by deleting the application (and key). :) If you decide to keep the application to have a preview available, you may also do that.
 
@@ -140,24 +156,30 @@ name: e2e
 
 on: pull_request
 
+permissions:
+  contents: read
+
 jobs:
   deploy_app:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      APP_NAME: my-app-${{ github.event.number }}
+      KEY_NAME: test-key-${{ github.event.number }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.1
       with:
+        persist-credentials: false
         fetch-depth: 0 # this is important!
     - name: create an ssh key just for this run
       run: |
         mkdir -p ~/.ssh/
-        ssh-keygen -b 2048 -t rsa -f ~/.ssh/test-runner -c "test-key-${{ github.run_id }}" -q -N ""
+        ssh-keygen -b 2048 -t rsa -f ~/.ssh/test-runner -c "${KEY_NAME}" -q -N ""
     - name: install Runway CLI, login and add ssh key
-      uses: hostwithquantum/setup-runway@v0.5.0
+      uses: hostwithquantum/setup-runway@v0.6.0
       with:
-        username: ${{ secrets.RUNWAY_USERNAME }}
-        password: ${{ secrets.RUNWAY_PASSWORD }}
-        application: my-app-${{ github.run_id }}
+        api-key: ${{ secrets.RUNWAY_API_KEY }}
+        application: ${{ env.APP_NAME }}
         public-key-location: ~/.ssh/test-runner.pub
         private-key-location: ~/.ssh/test-runner
         add-key: true
@@ -166,14 +188,14 @@ jobs:
       run: runway app deploy
     # this is where your tests run!
     - name: run your e2e tests here
-      run: curl https://my-app-${{ github.run_id }}.pqapp.dev/
+      run: curl https://${APP_NAME}.pqapp.dev/
     # then hopefully you are done :)
     - name: cleanup application
       if: always()
-      run : runway app rm -a my-app-${{ github.run_id }} || true
+      run : runway app rm -a ${APP_NAME} || true
     - name: cleanup key - this is brute force
       if: always()
-      run: runway key rm "test-key-${{ github.run_id }}" || true
+      run: runway key rm "${KEY_NAME}" || true
     - name: logout
       if: always()
       run: runway logout
@@ -181,12 +203,10 @@ jobs:
 
 ### Preview apps
 
-In the previous example, we created an application to run our tests. But another great use-case are preview-apps — they allow you to create a demo of your changes.
-
-The following workflow shows how to deletes an application from Runway when a pull-request is closed (merged or closed without merge).
+In the previous example, we created an application to run our tests. But another great use-case are preview-apps — they allow you to create a demo of your changes. The following workflow shows how to deletes an application from Runway when a pull-request is closed (merged or closed without merge).
 
 > [!IMPORTANT]
-> This example _assumes_ that you constructed the application with a stable identifier, e.g. `my-app-${{ github.event.number }}` (instead of `github.run_id`). In a pull request context, the `${{ github.event.number }}` is the ID of the pull request.
+> This example _assumes_ that you constructed the application with a stable identifier, e.g. `my-app-${{ github.event.number }}`. In a pull-request context, the `${{ github.event.number }}` is the ID/number of the pull-request.
 
 ```yaml
 # .github/workflows/delete-preview.yml
@@ -199,12 +219,13 @@ on:
 jobs:
   delete:
     runs-on: ubuntu-latest
+    env:
+      APP_NAME: my-app-${{ github.event.number }}
     steps:
-    - uses: hostwithquantum/setup-runway@v0.5.0
+    - uses: hostwithquantum/setup-runway@v0.6.0
       with:
-        username: ${{ secrets.QUANTUM_RUNWAY_USERNAME }}
-        password: ${{ secrets.QUANTUM_RUNWAY_PASSWORD }}
-    - run: runway app rm my-app-${{ github.event.number }}
+        api-key: ${{ secrets.RUNWAY_API_KEY }}
+    - run: runway app rm ${APP_NAME}
     - if: always()
       run: runway logout
 ```
